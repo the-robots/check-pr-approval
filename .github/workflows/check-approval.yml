@@ -18,7 +18,7 @@ jobs:
       - name: Find associated pull request
         id: find-pr
         run: |
-          pr_url=$(gh pr list --head "${{ github.actor }}:${{ github.ref }}" --json url --jq '.[0].url')
+          pr_url=$(gh pr list --head "${{ github.actor }}:${{ github.ref_name }}" --json url --jq '.[0].url')
           if [ -z "$pr_url" ]; then
             echo "No associated pull request found."
             exit 1  # Exit if no PR is found
