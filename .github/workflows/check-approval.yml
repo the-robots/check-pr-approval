@@ -19,7 +19,7 @@ jobs:
         id: find-pr
         run: |
           pr_url=$(gh pr list --head "${{ github.actor }}:${{ github.ref_name }}" --json url --jq '.[0].url')
-          echo "PR_URL=$pr_url" >> $GITHUB_ENV
+          echo "pr_url=$pr_url" >> $GITHUB_ENV
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Ensure the GH_TOKEN is set for the GitHub CLI
 
@@ -46,9 +46,8 @@ jobs:
       - name: Get approval timestamp
         id: get-approval
         run: |
-          # Extract the PR number from the URL stored in the previous step
-          pr_number=$(echo "${{ env.PR_URL }}" | grep -oE '[0-9]+$')
-          
+          pr_number=$(echo "${{ env.pr_url }}" | grep -oE '[0-9]+$')
+
           if [ -z "$pr_number" ]; then
             echo "No associated pull request found."
             exit 1  # Exit if no PR is found
