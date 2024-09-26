@@ -1,0 +1,19 @@
+name: 'Check PR Approval on New Commits'
+description: 'Checks if new commits were pushed after PR approval and dismisses the approval if necessary.'
+author: 'Your Name'
+inputs:
+  github-token:
+    description: 'GitHub token for authentication'
+    required: true
+  # Add other inputs as needed
+
+runs:
+  using: 'composite'
+  steps:
+    - run: |
+        echo "Checking PR approval status..."
+    # Add the steps you want to run in your action
+
+branding:
+  color: 'blue'
+  icon: 'check'
