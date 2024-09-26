@@ -19,9 +19,13 @@ jobs:
         id: find-pr
         run: |
           pr_url=$(gh pr list --head "${{ github.actor }}:${{ github.ref_name }}" --json url --jq '.[0].url')
-          echo "pr_url=$pr_url" >> $GITHUB_ENV
+          if [ -z "$pr_url" ]; then
+            echo "No associated pull request found."
+            exit 1  # Exit if no PR is found
+          fi
+          echo "::set-output name=pr_url::$pr_url"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Ensure the GH_TOKEN is set for the GitHub CLI
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Step 3: Get latest commit timestamp
       - name: Get latest commit timestamp
@@ -46,7 +50,7 @@ jobs:
       - name: Get approval timestamp
         id: get-approval
         run: |
-          pr_number=$(echo "${{ env.pr_url }}" | grep -oE '[0-9]+$')
+          pr_number=$(echo "${{ steps.find-pr.outputs.pr_url }}" | grep -oE '[0-9]+$')
 
           if [ -z "$pr_number" ]; then
             echo "No associated pull request found."
