@@ -1,4 +1,4 @@
-name: Check Approval on New Commits
+name: Check PR Approval on New Commits
 
 on:
   push:
@@ -8,28 +8,29 @@ on:
 jobs:
   check-approval:
     runs-on: ubuntu-latest
+
     steps:
       # Step 1: Checkout the repository
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Get the pull request associated with the push (if any)
+      # Step 2: Find associated pull request
       - name: Find associated pull request
         id: find-pr
         run: |
           pr_url=$(gh pr list --head "${{ github.actor }}:${{ github.ref_name }}" --json url --jq '.[0].url')
           echo "PR_URL=$pr_url" >> $GITHUB_ENV
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Ensure the GH_TOKEN is set for the GitHub CLI
 
-      # Step 3: Get the latest commit timestamp
+      # Step 3: Get latest commit timestamp
       - name: Get latest commit timestamp
         id: latest-commit
         run: |
           commit_sha=$(git rev-parse HEAD)
           commit_timestamp=$(gh api graphql -f query='
           {
-            repository(owner:"${{ github.repository_owner }}", name:"${{ github.event.repository.name }}") {
+            repository(owner: "${{ github.repository_owner }}", name: "${{ github.event.repository.name }}") {
               object(expression: "${commit_sha}") {
                 ... on Commit {
                   committedDate
@@ -38,15 +39,17 @@ jobs:
             }
           }' --jq '.data.repository.object.committedDate')
           echo "COMMIT_TIMESTAMP=$commit_timestamp" >> $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use the GitHub token for authentication
 
-      # Step 4: Get the approval timestamp
+      # Step 4: Get approval timestamp
       - name: Get approval timestamp
         id: get-approval
         run: |
           approval_timestamp=$(gh api graphql -f query='
           {
             repository(owner: "${{ github.repository_owner }}", name: "${{ github.event.repository.name }}") {
-              pullRequest(number: {{ pull_request_number }}) {
+              pullRequest(number: {{ steps.find-pr.outputs.pr_number }}) {
                 reviews(last: 1, states: APPROVED) {
                   nodes {
                     createdAt
@@ -56,6 +59,8 @@ jobs:
             }
           }' --jq '.data.repository.pullRequest.reviews.nodes[0].createdAt')
           echo "APPROVAL_TIMESTAMP=$approval_timestamp" >> $GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Step 5: Compare the timestamps
       - name: Compare timestamps
@@ -75,6 +80,5 @@ jobs:
       - name: Notify team about invalid approval
         if: failure()
         run: |
-          echo "New commit detected after approval. Notify team!"
+          echo "New commit detected after approval. Notify the team!"
           # Add your notification logic here (e.g., send a Slack message or post a comment on the PR)
-
