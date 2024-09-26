@@ -1,6 +1,6 @@
-# Check PR Approval on New Commits Action
+# Check PR Approval on New Commits 
 
-This GitHub Action checks if new commits have been pushed after a pull request (PR) approval and dismisses the approval if necessary or notifies the team. It helps maintain code review integrity by ensuring that approvals aren't stale when new commits are introduced.
+This Action checks if new commits have been pushed after a pull request (PR) approval and dismisses the approval if necessary or notifies the team. It helps maintain code review integrity by ensuring that approvals aren't stale when new commits are introduced.
 
 ## Features
 - Automatically checks if commits are pushed after a PR approval.
