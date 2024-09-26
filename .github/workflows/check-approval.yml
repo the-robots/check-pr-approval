@@ -46,10 +46,11 @@ jobs:
       - name: Get approval timestamp
         id: get-approval
         run: |
+          pr_number=$(echo "${{ steps.find-pr.outputs.PR_URL }}" | grep -oE '[0-9]+$')
           approval_timestamp=$(gh api graphql -f query='
           {
             repository(owner: "${{ github.repository_owner }}", name: "${{ github.event.repository.name }}") {
-              pullRequest(number: {{ steps.find-pr.outputs.pr_number }}) {
+              pullRequest(number: '"${pr_number}"') {
                 reviews(last: 1, states: APPROVED) {
                   nodes {
                     createdAt
