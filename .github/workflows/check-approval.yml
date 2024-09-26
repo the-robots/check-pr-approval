@@ -46,7 +46,14 @@ jobs:
       - name: Get approval timestamp
         id: get-approval
         run: |
-          pr_number=$(echo "${{ steps.find-pr.outputs.PR_URL }}" | grep -oE '[0-9]+$')
+          # Extract the PR number from the URL stored in the previous step
+          pr_number=$(echo "${{ env.PR_URL }}" | grep -oE '[0-9]+$')
+          
+          if [ -z "$pr_number" ]; then
+            echo "No associated pull request found."
+            exit 1  # Exit if no PR is found
+          fi
+
           approval_timestamp=$(gh api graphql -f query='
           {
             repository(owner: "${{ github.repository_owner }}", name: "${{ github.event.repository.name }}") {
@@ -59,6 +66,7 @@ jobs:
               }
             }
           }' --jq '.data.repository.pullRequest.reviews.nodes[0].createdAt')
+
           echo "APPROVAL_TIMESTAMP=$approval_timestamp" >> $GITHUB_ENV
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
