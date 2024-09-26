@@ -18,14 +18,14 @@ jobs:
       - name: Find associated pull request
         id: find-pr
         run: |
-          pr_url=$(gh pr list --head "${{ github.actor }}:${{ github.ref_name }}" --json url --jq '.[0].url')
+          pr_url=$(gh pr list --head "${{ github.repository_owner }}:${{ github.ref_name }}" --json url --jq '.[0].url')
           if [ -z "$pr_url" ]; then
             echo "No associated pull request found."
             exit 1  # Exit if no PR is found
           fi
           echo "::set-output name=pr_url::$pr_url"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Ensure the GH_TOKEN is set for the GitHub CLI
 
       # Step 3: Get latest commit timestamp
       - name: Get latest commit timestamp
