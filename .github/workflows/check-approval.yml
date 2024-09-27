@@ -33,20 +33,32 @@ jobs:
       - name: Get latest commit timestamp
         id: latest-commit
         run: |
-          commit_sha=$(git rev-parse HEAD)
+          commit_sha=$(git rev-parse HEAD)  # Get the latest commit SHA
+          echo "Commit SHA: $commit_sha"
+
+          # Fetch the commit timestamp using GraphQL
           commit_timestamp=$(gh api graphql -f query='
           {
             repository(owner: "${{ github.repository_owner }}", name: "${{ github.event.repository.name }}") {
-              object(expression: "${commit_sha}") {
+              object(expression: "'$commit_sha'") {
                 ... on Commit {
                   committedDate
                 }
               }
             }
           }' --jq '.data.repository.object.committedDate')
+
+          echo "Commit Timestamp: $commit_timestamp"
+
+          if [ -z "$commit_timestamp" ]; then
+            echo "Failed to retrieve commit timestamp."
+            exit 1  # Fail the job if the commit timestamp is missing
+          fi
+
+          # Set the commit timestamp in the environment variable
           echo "COMMIT_TIMESTAMP=$commit_timestamp" >> $GITHUB_ENV
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use the GitHub token for authentication
 
       # Step 4: Get approval timestamp
       - name: Get approval timestamp
