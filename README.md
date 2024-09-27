@@ -72,7 +72,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@latest
 
       - name: Check PR Approval
         uses: the-robots/check-pr-approval@latest
@@ -96,5 +96,6 @@ This project is licensed under the MIT License.
 
 ## Support
 For any issues, feel free to open an issue in this repository. We’ll try help with any problems or questions you may have.
+
 
 
