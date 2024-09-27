@@ -69,6 +69,10 @@ jobs:
             exit 1
           fi
 
+          # Debugging: Log PR_NUMBER to confirm it's passed
+          echo "PR Number: ${{ env.PR_NUMBER }}"
+
+          # GraphQL query to get the approval timestamp
           approval_timestamp=$(gh api graphql -f query='
           {
             repository(owner: "${{ github.repository_owner }}", name: "${{ github.event.repository.name }}") {
@@ -82,8 +86,19 @@ jobs:
             }
           }' --jq '.data.repository.pullRequest.reviews.nodes[0].createdAt')
 
+          # Log the approval timestamp
+          echo "Approval Timestamp: $approval_timestamp"
+          
+          # Check if the approval timestamp is empty
+          if [ -z "$approval_timestamp" ]; then
+            echo "No approval timestamp found."
+            exit 1  # Fail the job if approval timestamp is missing
+          fi
+
+          # Store the approval timestamp in the environment
           echo "APPROVAL_TIMESTAMP=$approval_timestamp" >> $GITHUB_ENV
         env:
+          PR_NUMBER: ${{ env.PR_NUMBER }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # Step 5: Compare the timestamps
