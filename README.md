@@ -14,10 +14,10 @@ This Action checks if new commits have been pushed after a pull request (PR) app
 | `github-token` | The GitHub token for authentication in API requests.          | `true`   |         |
 
 ## Outputs
-This action currently doesn't return any outputs but performs in-place validation and optional notifications.
+This currently doesn't return any outputs but performs in-place validation and optional notifications.
 
 ## Example Usage
-To use this action in your workflows, you need to set it up as follows:
+To use this in your workflows, you need to set it up as follows:
 
 ```yaml
 name: Check PR Approval on New Commits
@@ -72,7 +72,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@latest
 
       - name: Check PR Approval
         uses: the-robots/check-pr-approval@latest
@@ -92,9 +92,10 @@ jobs:
 - Optional Notification: If the approval is found to be stale, the action can notify the team.
 
 ## License
-This project is licensed under the MIT License. See LICENSE for details.
+This project is licensed under the MIT License. 
 
 ## Support
 For any issues, feel free to open an issue in this repository. We’ll try help with any problems or questions you may have.
+
 
 
