@@ -17,34 +17,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Determine the correct branch to use
-      - name: Set branch dynamically
-        id: set-branch
+      # Step 2: Extract Pull Request Number (if available)
+      - name: Get PR Number
+        id: get-pr-number
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            branch_name="${{ github.head_ref }}"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            pr_number=$(echo "${{ github.event.pull_request.number }}")
           else
-            branch_name="${{ github.ref_name }}"
+            pr_number=""
           fi
-          echo "BRANCH_NAME=$branch_name" >> $GITHUB_ENV
-          echo "Branch Name: $branch_name"
+          echo "PR_NUMBER=$pr_number" >> $GITHUB_ENV
+          echo "Pull Request Number: $pr_number"
 
-      # Step 3: Find associated pull request
-      - name: Find associated pull request
-        id: find-pr
-        run: |
-          pr_url=$(gh pr list --head "${{ github.repository_owner }}:${{ env.BRANCH_NAME }}" --json url --jq '.[0].url')
-          echo "Branch: ${{ env.BRANCH_NAME }}"
-          echo "Repo owner: ${{ github.repository_owner }}"
-          if [ -z "$pr_url" ]; then
-            echo "No associated pull request found."
-            exit 1  # Exit if no PR is found
-          fi
-          echo "::set-output name=pr_url::$pr_url"
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Ensure the GH_TOKEN is set for the GitHub CLI
-
-      # Step 4: Get latest commit timestamp
+      # Step 3: Get latest commit timestamp
       - name: Get latest commit timestamp
         id: latest-commit
         run: |
@@ -61,23 +46,21 @@ jobs:
           }' --jq '.data.repository.object.committedDate')
           echo "COMMIT_TIMESTAMP=$commit_timestamp" >> $GITHUB_ENV
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use the GitHub token for authentication
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step 5: Get approval timestamp
+      # Step 4: Get approval timestamp
       - name: Get approval timestamp
         id: get-approval
         run: |
-          pr_number=$(echo "${{ steps.find-pr.outputs.pr_url }}" | grep -oE '[0-9]+$')
-
-          if [ -z "$pr_number" ]; then
+          if [ -z "${{ env.PR_NUMBER }}" ]; then
             echo "No associated pull request found."
-            exit 1  # Exit if no PR is found
+            exit 1
           fi
 
           approval_timestamp=$(gh api graphql -f query='
           {
             repository(owner: "${{ github.repository_owner }}", name: "${{ github.event.repository.name }}") {
-              pullRequest(number: '"${pr_number}"') {
+              pullRequest(number: '"${{ env.PR_NUMBER }}"') {
                 reviews(last: 1, states: APPROVED) {
                   nodes {
                     createdAt
@@ -91,13 +74,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step 6: Compare the timestamps
+      # Step 5: Compare the timestamps
       - name: Compare timestamps
         id: compare-timestamps
         run: |
           if [[ "${{ env.COMMIT_TIMESTAMP }}" > "${{ env.APPROVAL_TIMESTAMP }}" ]]; then
             echo "New commit was pushed after approval. Dismissing approval."
-            exit 1  # Fail the check if a new commit was pushed after approval
+            exit 1
           else
             echo "No new commit after approval."
           fi
@@ -105,9 +88,8 @@ jobs:
           COMMIT_TIMESTAMP: ${{ env.COMMIT_TIMESTAMP }}
           APPROVAL_TIMESTAMP: ${{ env.APPROVAL_TIMESTAMP }}
 
-      # Step 7: (Optional) Notify if approval is invalid
+      # Step 6: (Optional) Notify if approval is invalid
       - name: Notify team about invalid approval
         if: failure()
         run: |
           echo "New commit detected after approval. Notify the team!"
-          # Add your notification logic here (e.g., send a Slack message or post a comment on the PR)
