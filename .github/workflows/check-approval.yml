@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - '**'
+  pull_request:
+    branches:
+      - '**'
 
 jobs:
   check-approval:
@@ -14,22 +17,34 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # Step 2: Find associated pull request
+      # Step 2: Determine the correct branch to use
+      - name: Set branch dynamically
+        id: set-branch
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            branch_name="${{ github.head_ref }}"
+          else
+            branch_name="${{ github.ref_name }}"
+          fi
+          echo "BRANCH_NAME=$branch_name" >> $GITHUB_ENV
+          echo "Branch Name: $branch_name"
+
+      # Step 3: Find associated pull request
       - name: Find associated pull request
         id: find-pr
         run: |
-          pr_url=$(gh pr list --head "${{ github.repository_owner }}:${{ github.head_ref }}" --json url --jq '.[0].url')
-          echo "Branch: ${{ github.head_ref }}"
+          pr_url=$(gh pr list --head "${{ github.repository_owner }}:${{ env.BRANCH_NAME }}" --json url --jq '.[0].url')
+          echo "Branch: ${{ env.BRANCH_NAME }}"
           echo "Repo owner: ${{ github.repository_owner }}"
           if [ -z "$pr_url" ]; then
-           echo "No associated pull request found."
+            echo "No associated pull request found."
             exit 1  # Exit if no PR is found
           fi
           echo "::set-output name=pr_url::$pr_url"
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Ensure the GH_TOKEN is set for the GitHub CLI
 
-      # Step 3: Get latest commit timestamp
+      # Step 4: Get latest commit timestamp
       - name: Get latest commit timestamp
         id: latest-commit
         run: |
@@ -48,7 +63,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use the GitHub token for authentication
 
-      # Step 4: Get approval timestamp
+      # Step 5: Get approval timestamp
       - name: Get approval timestamp
         id: get-approval
         run: |
@@ -76,7 +91,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step 5: Compare the timestamps
+      # Step 6: Compare the timestamps
       - name: Compare timestamps
         id: compare-timestamps
         run: |
@@ -90,7 +105,7 @@ jobs:
           COMMIT_TIMESTAMP: ${{ env.COMMIT_TIMESTAMP }}
           APPROVAL_TIMESTAMP: ${{ env.APPROVAL_TIMESTAMP }}
 
-      # Step 6: (Optional) Notify if approval is invalid
+      # Step 7: (Optional) Notify if approval is invalid
       - name: Notify team about invalid approval
         if: failure()
         run: |
