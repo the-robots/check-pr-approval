@@ -19,8 +19,10 @@ jobs:
         id: find-pr
         run: |
           pr_url=$(gh pr list --head "${{ github.repository_owner }}:${{ github.head_ref }}" --json url --jq '.[0].url')
+          echo "Branch: ${{ github.head_ref }}"
+          echo "Repo owner: ${{ github.repository_owner }}"
           if [ -z "$pr_url" ]; then
-            echo "No associated pull request found."
+           echo "No associated pull request found."
             exit 1  # Exit if no PR is found
           fi
           echo "::set-output name=pr_url::$pr_url"
@@ -44,7 +46,7 @@ jobs:
           }' --jq '.data.repository.object.committedDate')
           echo "COMMIT_TIMESTAMP=$commit_timestamp" >> $GITHUB_ENV
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Use the GitHub token for authentication
 
       # Step 4: Get approval timestamp
       - name: Get approval timestamp
